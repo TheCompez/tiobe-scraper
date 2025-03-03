@@ -2,189 +2,193 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import com.tiobe 1.0
+import QtQuick.Controls.Material  // For elevation effect
 
 ApplicationWindow {
     visible: true
-    width: 800
-    height: 600
+    minimumWidth: 400
+    minimumHeight: 300
+    width: 600
+    height: 500
     title: "TIOBE Index"
-    color: "#f9f9f9"  // Soft background color for the app
+    color: "#eef2f6"
 
-    Component.onCompleted: {
-        if (!scraper) {
-            console.error("Scraper is not available.");
-        } else {
-            scraper.getTiobeIndex();
-        }
-    }
+    Material.theme: Material.Light
+    Material.accent: "#007bff"
 
-    // Header Bar
+    // Header with Gradient
     Rectangle {
         id: header
         width: parent.width
         height: 60
-        color: "#007BFF"  // Primary blue color
-        radius: 0
-        anchors.top: parent.top
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "#007bff" }
+            GradientStop { position: 1.0; color: "#00c4ff" }
+        }
 
         Text {
             anchors.centerIn: parent
             text: "TIOBE Index"
+            font.pointSize: 18
             font.bold: true
-            font.pointSize: 20
+            font.family: "Helvetica"
             color: "white"
+            style: Text.Raised
+            styleColor: Qt.rgba(0, 0, 0, 0.2)
         }
     }
 
-    // Loading Indicator
+    // Loading with Pulse Effect
     Rectangle {
-        id: loadingIndicator
-        width: parent.width
-        height: parent.height
-        color: "#ffffff"  // Background color for loading
-        z: 10
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.3)
         visible: scraper ? scraper.languages.length === 0 : true
+        z: 10
 
-        Column {
+        BusyIndicator {
             anchors.centerIn: parent
-            spacing: 20
+            running: parent.visible
+            width: 50
+            height: 50
+            opacity: 0.8
 
-            Text {
-                text: "Fetching TIOBE Index..."
-                font.bold: true
-                font.pointSize: 18
-                color: "#555555"
-            }
-
-            ProgressBar {
-                width: 200
-                height: 5
-                from: 0
-                to: 100
-                value: 50
-                indeterminate: true
+            SequentialAnimation on scale {
+                loops: Animation.Infinite
+                running: parent.visible
+                PropertyAnimation { to: 1.1; duration: 800; easing.type: Easing.InOutQuad }
+                PropertyAnimation { to: 1.0; duration: 800; easing.type: Easing.InOutQuad }
             }
         }
     }
 
-    // ListView to display the languages
+    // Language List with Effects
     ListView {
-        id: languageList
+        id: listView
         anchors {
             top: header.bottom
             left: parent.left
             right: parent.right
             bottom: parent.bottom
+            margins: 15
         }
         model: scraper ? scraper.languages : []
-        spacing: 10  // Space between items
         clip: true
+        spacing: 10
 
-        // Delegate for each item in the list
-        delegate: Item {
-            width: languageList.width
-            height: 100
+        delegate: Rectangle {
+            width: listView.width
+            height: 55
+            radius: 8
+            color: "white"
+            opacity: 0
+            Material.elevation: 2  // Built-in Qt 6 shadow effect
 
-            // Container for shadow and content
-            Item {
-                width: parent.width
-                height: parent.height
+            // Entry Animation
+            SequentialAnimation on opacity {
+                running: true
+                NumberAnimation { to: 1; duration: 400; easing.type: Easing.OutCubic }
+            }
+            Behavior on y { SpringAnimation { spring: 3; damping: 0.2 } }
 
-                // Simulated shadow using a semi-transparent Rectangle
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: Math.max(10, parent.width * 0.03)
+
+                // Rank with Gradient Circle
                 Rectangle {
-                    anchors.fill: parent
-                    z: -1  // Place shadow behind the content
-                    anchors.margins: 4  // Offset to simulate shadow spread
+                    width: 35
+                    height: 35
+                    radius: 17.5
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#007bff" }
+                        GradientStop { position: 1.0; color: "#00c4ff" }
+                    }
+                    Text {
+                        anchors.centerIn: parent
+                        text: modelData.rank
+                        color: "white"
+                        font.pointSize: 12
+                        font.bold: true
+                    }
                 }
 
-                // Card-style container with rounded corners
-                Rectangle {
-                    id: rowContainer
-                    anchors.fill: parent
-                    color: "white"
-                    border.color: "#ddd"
-                    border.width: 1
+                Text {
+                    text: modelData.name
+                    font.pointSize: 13
+                    font.family: "Helvetica"
+                    color: "#1e293b"
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                }
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 6
+                Text {
+                    text: modelData.percentage + "%"
+                    font.pointSize: 12
+                    color: "#64748b"
+                    Layout.preferredWidth: 60
+                }
 
-                        RowLayout {
-                            spacing: 20
+                Text {
+                    text: modelData.change
+                    font.pointSize: 12
+                    font.bold: true
+                    color: modelData.change.startsWith('+') ? "#22c55e" : "#ef4444"
+                    Layout.preferredWidth: 50
 
-                            Text {
-                                text: "Rank: " + modelData.rank
-                                font.bold: true
-                                font.pointSize: 16
-                                color: "#333333"
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            Text {
-                                text: modelData.name
-                                font.bold: true
-                                font.pointSize: 16
-                                color: "#007BFF"
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            Text {
-                                text: modelData.percentage + "%"
-                                font.pointSize: 14
-                                color: "#555555"
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            Text {
-                                text: modelData.change
-                                font.pointSize: 14
-                                font.bold: true
-                                color: modelData.change.startsWith('+') ? "green" : "red"
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-                        }
-
-                        // Divider line
-                        Rectangle {
-                            height: 1
-                            color: "#eeeeee"
-                            width: parent.width
-                        }
-                    }
-
-                    // Hover effect
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-
-                        property bool isHovered: false
-
-                        onEntered: {
-                            isHovered = true;
-                            rowContainer.color = "#f0f0f0";  // Highlight color when hovered
-                        }
-
-                        onExited: {
-                            isHovered = false;
-                            rowContainer.color = "white";  // Default color
-                        }
+                    // Bounce animation for change
+                    SequentialAnimation on scale {
+                        running: modelData.change !== ""
+                        loops: 1
+                        PropertyAnimation { to: 1.2; duration: 200; easing.type: Easing.OutBack }
+                        PropertyAnimation { to: 1.0; duration: 300; easing.type: Easing.OutBounce }
                     }
                 }
             }
+
+            // Hover and Scale Effect
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: {
+                    parent.scale = 1.02
+                    parent.color = "#f8fafc"
+                    parent.Material.elevation = 4  // Increase elevation on hover
+                }
+                onExited: {
+                    parent.scale = 1.0
+                    parent.color = "white"
+                    parent.Material.elevation = 2
+                }
+            }
+
+            Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.InOutQuad } }
         }
 
-        // Fetch data when the component is ready
-        Component.onCompleted: {
-            scraper.getTiobeIndex()
+        // Smooth Scroll
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
+            active: true
+            width: 8
+            background: Rectangle { color: "#e2e8f0"; radius: 4 }
+            contentItem: Rectangle { color: "#94a3b8"; radius: 4 }
         }
     }
 
-    // Update the ListView model when data changes
+    // Data Fetching
+    Component.onCompleted: {
+        if (scraper) {
+            scraper.getTiobeIndex()
+        } else {
+            console.error("Scraper unavailable")
+        }
+    }
+
     Connections {
         target: scraper
         function onLanguagesChanged() {
-            languageList.model = scraper.languages
+            listView.model = scraper.languages
         }
     }
 }

@@ -11,7 +11,7 @@
 #include <QDebug>
 #include <QList>
 
-#define INDEX_URL "https://www.tiobe.com/tiobe-index/"
+#define INDEX_URL "https://genyleap.com/api/wasm/redirect"
 
 /**
  * @class TiobeScraper
